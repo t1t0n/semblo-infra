@@ -1,0 +1,113 @@
+name: semblo
+
+# Production compose: api + db + frontend + caddy. No MinIO — boto3 hits
+# real AWS S3 directly (SEMBLO_S3_ENDPOINT_URL is unset in /opt/semblo/.env).
+#
+# Compose reads /opt/semblo/.env automatically for ${VAR} interpolation here
+# (e.g. POSTGRES_PASSWORD, GHCR_REPOSITORY, FRONTEND_GHCR_REPOSITORY). The
+# `api` service additionally pulls that same file into the container via
+# `env_file:` so every SEMBLO_* setting reaches uvicorn.
+#
+# IMAGE_TAG          — exported by semblo-backend's deploy script. Defaults to `latest`.
+# FRONTEND_IMAGE_TAG — exported by semblo-frontend's deploy script. Defaults to `latest`.
+
+services:
+  api:
+    image: ghcr.io/${GHCR_REPOSITORY}:${IMAGE_TAG:-latest}
+    container_name: semblo-api
+    environment:
+      SEMBLO_DB_URL: postgresql+asyncpg://semblo:${POSTGRES_PASSWORD}@db:5432/semblo
+    env_file:
+      - .env
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz', timeout=3).status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:16-alpine
+    container_name: semblo-db
+    environment:
+      POSTGRES_USER: semblo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: semblo
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semblo -d semblo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ghcr.io/${FRONTEND_GHCR_REPOSITORY}:${FRONTEND_IMAGE_TAG:-latest}
+    container_name: semblo-frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: semblo-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

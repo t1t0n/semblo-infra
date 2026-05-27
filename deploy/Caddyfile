@@ -1,0 +1,38 @@
+{
+    # Email Let's Encrypt uses for expiry notifications. Set to a real
+    # inbox before going live.
+    email admin@semblo.app
+}
+
+# ── API ─────────────────────────────────────────────────────────────
+api.semblo.app {
+    reverse_proxy api:8000
+
+    encode gzip
+
+    log {
+        output stdout
+        format json
+    }
+
+    # Caddy auto-detects streaming responses (SSE, websockets) and
+    # disables buffering, so /trips/{id}/events streams live without
+    # extra config. If chunking ever breaks, set `flush_interval -1` on
+    # a dedicated reverse_proxy directive for /events.
+}
+
+# ── Marketing site (apex) ───────────────────────────────────────────
+semblo.app {
+    encode gzip zstd
+    reverse_proxy frontend:80
+
+    log {
+        output stdout
+        format json
+    }
+}
+
+# ── www → apex redirect ─────────────────────────────────────────────
+www.semblo.app {
+    redir https://semblo.app{uri} permanent
+}
