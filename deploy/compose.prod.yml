@@ -82,6 +82,10 @@ services:
         max-file: "3"
 
   caddy:
+    # No depends_on: Caddy resolves upstreams via Docker DNS on each request,
+    # so it starts cleanly even if `api` or `frontend` are missing/down. This
+    # also keeps `docker compose up -d caddy` from cascade-pulling images that
+    # might not be on GHCR yet (e.g. before the first frontend CI run).
     image: caddy:2-alpine
     container_name: semblo-caddy
     ports:
@@ -91,9 +95,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    depends_on:
-      - api
-      - frontend
     networks:
       - internal
     restart: unless-stopped
