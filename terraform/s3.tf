@@ -2,6 +2,11 @@
 # through itself (signed URLs over our domain) so the bucket stays private.
 resource "aws_s3_bucket" "uploads" {
   bucket = "semblo-uploads-${var.environment}"
+
+  lifecycle {
+    # User data — never delete without an explicit deliberate change.
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "uploads" {
@@ -24,6 +29,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "uploads" {
 # Backups bucket — nightly pg_dump goes here, 30-day retention.
 resource "aws_s3_bucket" "backups" {
   bucket = "semblo-backups-${var.environment}"
+
+  lifecycle {
+    # Postgres dumps — the only off-instance copy of DB state. Never delete.
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "backups" {

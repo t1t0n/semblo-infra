@@ -24,6 +24,12 @@ resource "aws_eip" "api" {
   tags = {
     Name = "semblo-${var.environment}-api"
   }
+
+  lifecycle {
+    # Losing the EIP means DNS needs updating + ACME certs need re-issuing.
+    # Hard-block destroy; remove this block (carefully) only when migrating.
+    prevent_destroy = true
+  }
 }
 
 resource "aws_instance" "api" {
@@ -75,6 +81,13 @@ resource "aws_instance" "api" {
     # editing deploy/user_data.sh has zero effect on a running instance.
     # We change live config via SSM SendCommand from .github/workflows/.
     ignore_changes = [ami, user_data]
+
+    # Belt-and-suspenders: even if someone edits a ForceNew field
+    # (subnet_id, key_name, root_block_device.volume_type/encrypted), TF
+    # refuses to plan a destroy here. Removing this block is a deliberate
+    # act that has to land in its own commit — there is no accidental path
+    # to wiping the Postgres volume.
+    prevent_destroy = true
   }
 }
 

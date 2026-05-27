@@ -64,6 +64,28 @@ jobs:
           terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan.txt
           echo "exitcode=$?" >> "$GITHUB_OUTPUT"
 
+      # Hard guardrail: refuse to apply any plan that destroys a resource.
+      # Catches BOTH pure deletes and -/+ destroy-then-create (replacement),
+      # which is the failure mode that lost us Postgres on the cutover.
+      # If you genuinely need to drop something, run terraform apply locally
+      # with admin creds — the workflow is the wrong place to take a risky
+      # destructive action.
+      - name: Block destructive plans
+        run: |
+          DESTROYS=$(terraform show -json tfplan \
+            | jq -r '[.resource_changes[] | select(.change.actions | index("delete")) | .address] | .[]')
+          if [ -n "$DESTROYS" ]; then
+            echo "::error::Plan contains destructive changes — apply blocked."
+            echo "Resources marked for destroy or replace:"
+            echo "$DESTROYS" | sed 's/^/  · /'
+            echo ""
+            echo "If this destroy is intentional: run \`terraform apply\` locally"
+            echo "from terraform/ with admin AWS credentials. Do NOT remove this"
+            echo "guard to push a destroy through CI."
+            exit 1
+          fi
+          echo "No destroys in plan — safe to apply."
+
       - name: Post plan to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
