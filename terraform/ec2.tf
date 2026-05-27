@@ -64,6 +64,18 @@ resource "aws_instance" "api" {
 
   # Ensure SSM params exist before the instance boots (user_data reads them).
   depends_on = [aws_ssm_parameter.app]
+
+  lifecycle {
+    # The aws_ami data source picks `most_recent`, so AL2023 AMI rotation
+    # would otherwise force-replace the instance (destroying the Postgres
+    # volume on root EBS). Ignore drift here — upgrade the box explicitly
+    # via `terraform taint aws_instance.api` when you actually want to.
+    #
+    # user_data is also ignored: cloud-init only runs at first boot, so
+    # editing deploy/user_data.sh has zero effect on a running instance.
+    # We change live config via SSM SendCommand from .github/workflows/.
+    ignore_changes = [ami, user_data]
+  }
 }
 
 resource "aws_eip_association" "api" {
