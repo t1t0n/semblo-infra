@@ -149,6 +149,7 @@ jobs:
               \"set -e\",
               \"cd /opt/semblo\",
               \"git -C infra-repo pull --ff-only origin main\",
+              \"bash infra-repo/deploy/render-env.sh eu-central-1\",
               \"docker compose -f compose.prod.yml pull --ignore-pull-failures\",
               \"docker compose -f compose.prod.yml up -d --no-deps api db caddy\",
               \"docker compose -f compose.prod.yml up -d --no-deps frontend || echo '[skip] frontend image not on GHCR yet'\"

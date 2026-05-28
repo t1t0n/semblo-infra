@@ -41,6 +41,19 @@ locals {
     "SEMBLO_EMAIL_BACKEND",
     "SEMBLO_EMAIL_FROM",
     "SEMBLO_LOG_LEVEL",
+
+    # Frontend origin embedded in password-reset / verify-email URLs
+    # (https://semblo.app in prod). Falls back to config.py default if unset.
+    "SEMBLO_FRONTEND_BASE_URL",
+
+    # SMTP transport for real email delivery (Google Workspace Gmail).
+    # SEMBLO_SMTP_PASSWORD is a Google App Password — keep it SecureString.
+    # Only consulted when SEMBLO_EMAIL_BACKEND=smtp.
+    "SEMBLO_SMTP_HOST",
+    "SEMBLO_SMTP_PORT",
+    "SEMBLO_SMTP_STARTTLS",
+    "SEMBLO_SMTP_USERNAME",
+    "SEMBLO_SMTP_PASSWORD",
   ]
 }
 

@@ -65,25 +65,12 @@ ln -sf /opt/semblo/infra-repo/deploy/compose.prod.yml /opt/semblo/compose.prod.y
 ln -sf /opt/semblo/infra-repo/deploy/Caddyfile /opt/semblo/Caddyfile
 
 # ── /opt/semblo/.env from SSM ────────────────────────────────────────
-# Every Parameter Store entry under /semblo/prod/* becomes one .env line.
-# Names like /semblo/prod/SEMBLO_JWT_SECRET → SEMBLO_JWT_SECRET=<value>.
-aws --region "${aws_region}" ssm get-parameters-by-path \
-  --path /semblo/prod \
-  --recursive \
-  --with-decryption \
-  --query 'Parameters[*].[Name,Value]' \
-  --output text \
-| awk -F'\t' '{ n = split($1, p, "/"); print p[n] "=" $2 }' \
-> /opt/semblo/.env
-
-# GHCR_REPOSITORY values are needed by compose interpolation but aren't
-# really secrets, so derive them from Terraform inputs.
-# They MUST be set in SSM Parameter Store as:
-#   /semblo/prod/GHCR_REPOSITORY          → e.g. t1t0n/semblo-backend
-#   /semblo/prod/FRONTEND_GHCR_REPOSITORY → e.g. t1t0n/semblo-frontend
-# (Both are picked up by the get-parameters-by-path call above.)
-
-chmod 600 /opt/semblo/.env
+# Render every /semblo/prod/* parameter into /opt/semblo/.env. The same
+# script runs on every deploy (via the CI SSM commands) so Parameter Store
+# changes propagate without a manual step — first boot and deploys share
+# identical logic. GHCR_REPOSITORY / FRONTEND_GHCR_REPOSITORY (needed by
+# compose interpolation) are picked up by the same call.
+bash /opt/semblo/infra-repo/deploy/render-env.sh "${aws_region}"
 
 # ── GHCR login (system-wide so `root` can pull on subsequent reboots) ─
 echo "$$GITHUB_TOKEN" | docker login ghcr.io -u x-access-token --password-stdin
