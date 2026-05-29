@@ -66,12 +66,23 @@ locals {
     "SEMBLO_FCM_ENABLED",
     "SEMBLO_FCM_PROJECT_ID",
     "SEMBLO_FCM_CREDENTIALS_JSON",
+
+    # SSO login (Sign in with Google) — stage 18. The expected audience of
+    # the ID token the Android client posts to /auth/google: the *Web*
+    # OAuth client ID (the Flutter serverClientId), NOT the Android client.
+    # It's a public identifier (embedded in the app), not a secret, so its
+    # real value lives in ssm_param_defaults below. Apple is omitted until
+    # there's an Apple Developer account — config.py defaults it to unset,
+    # so /auth/apple returns 503 until then.
+    "SEMBLO_SSO_GOOGLE_CLIENT_ID",
   ]
 
   # Initial values for params where the generic "REPLACE_ME" stub would be
-  # invalid (e.g. a bool). Everything else starts as "REPLACE_ME".
+  # invalid (e.g. a bool) or where the value is public and can be committed.
+  # Everything else starts as "REPLACE_ME".
   ssm_param_defaults = {
-    SEMBLO_FCM_ENABLED = "false"
+    SEMBLO_FCM_ENABLED          = "false"
+    SEMBLO_SSO_GOOGLE_CLIENT_ID = "22611086967-o9tmb2p2rvoqfsiqcgcuqu8fu4tulkvs.apps.googleusercontent.com"
   }
 }
 
