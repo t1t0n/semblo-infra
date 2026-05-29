@@ -54,7 +54,25 @@ locals {
     "SEMBLO_SMTP_STARTTLS",
     "SEMBLO_SMTP_USERNAME",
     "SEMBLO_SMTP_PASSWORD",
+
+    # Push notifications (FCM) — stage 15. Off until SEMBLO_FCM_ENABLED=true.
+    # SEMBLO_FCM_CREDENTIALS_JSON is the Firebase service-account key,
+    # base64-encoded (so it survives SSM -> .env -> compose env_file). Set it:
+    #   aws ssm put-parameter --name /semblo/prod/SEMBLO_FCM_CREDENTIALS_JSON \
+    #     --type SecureString --tier Intelligent-Tiering --overwrite \
+    #     --value "$(base64 -w0 serviceAccountKey.json)"
+    # SEMBLO_FCM_ENABLED defaults to "false" (see ssm_param_defaults) — never
+    # leave it "REPLACE_ME", which would fail bool parsing and crash boot.
+    "SEMBLO_FCM_ENABLED",
+    "SEMBLO_FCM_PROJECT_ID",
+    "SEMBLO_FCM_CREDENTIALS_JSON",
   ]
+
+  # Initial values for params where the generic "REPLACE_ME" stub would be
+  # invalid (e.g. a bool). Everything else starts as "REPLACE_ME".
+  ssm_param_defaults = {
+    SEMBLO_FCM_ENABLED = "false"
+  }
 }
 
 resource "aws_ssm_parameter" "app" {
@@ -62,7 +80,7 @@ resource "aws_ssm_parameter" "app" {
 
   name  = "/semblo/${var.environment}/${each.key}"
   type  = "SecureString"
-  value = "REPLACE_ME"
+  value = lookup(local.ssm_param_defaults, each.key, "REPLACE_ME")
 
   lifecycle {
     ignore_changes = [value]
