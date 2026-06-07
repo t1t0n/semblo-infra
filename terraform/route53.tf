@@ -20,6 +20,15 @@ resource "aws_route53_record" "web" {
   records = [aws_eip.api.public_ip]
 }
 
+# web.semblo.app → EC2 EIP. The same Caddy proxies this host to the web container.
+resource "aws_route53_record" "app" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = var.app_domain_name
+  type    = "A"
+  ttl     = 300
+  records = [aws_eip.api.public_ip]
+}
+
 # www.semblo.app → EC2 EIP. Caddy redirects www → apex in the site block.
 resource "aws_route53_record" "www" {
   zone_id = data.aws_route53_zone.main.zone_id

@@ -32,6 +32,17 @@ semblo.app {
     }
 }
 
+# ── Web app (authenticated travel-planning app) ─────────────────────
+web.semblo.app {
+    encode gzip zstd
+    reverse_proxy web:80
+
+    log {
+        output stdout
+        format json
+    }
+}
+
 # ── www → apex redirect ─────────────────────────────────────────────
 www.semblo.app {
     redir https://semblo.app{uri} permanent

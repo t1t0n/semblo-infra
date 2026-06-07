@@ -9,7 +9,7 @@ output "public_ip" {
 }
 
 output "gh_app_role_arn" {
-  description = "Set this as the GitHub repository secret `AWS_OIDC_ROLE_ARN` on semblo-backend AND semblo-frontend."
+  description = "Set this as the GitHub repository secret `AWS_OIDC_ROLE_ARN` on semblo-backend, semblo-frontend AND semblo-web."
   value       = aws_iam_role.github_actions.arn
 }
 
@@ -36,4 +36,9 @@ output "api_url" {
 output "web_url" {
   description = "Public URL for the marketing site."
   value       = "https://${var.web_domain_name}"
+}
+
+output "app_url" {
+  description = "Public URL for the authenticated web app (semblo-web)."
+  value       = "https://${var.app_domain_name}"
 }

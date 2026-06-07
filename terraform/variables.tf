@@ -22,6 +22,12 @@ variable "web_domain_name" {
   default     = "semblo.app"
 }
 
+variable "app_domain_name" {
+  description = "Public hostname the authenticated web app (semblo-web) serves on."
+  type        = string
+  default     = "web.semblo.app"
+}
+
 variable "hosted_zone_name" {
   description = "Route 53 hosted zone records go into. Must already exist."
   type        = string

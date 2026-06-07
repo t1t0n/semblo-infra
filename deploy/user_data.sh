@@ -14,6 +14,7 @@
 #   semblo-infra:    git -C infra-repo pull && docker compose up -d
 #   semblo-backend:  git -C infra-repo pull && docker compose pull api && up -d api
 #   semblo-frontend: git -C infra-repo pull && docker compose pull frontend && up -d frontend
+#   semblo-web:      git -C infra-repo pull && docker compose pull web && up -d web
 #
 # This script is rendered by Terraform templatefile(). Bare `dollar-brace`
 # substitutions are Terraform variables; a doubled dollar sign escapes one

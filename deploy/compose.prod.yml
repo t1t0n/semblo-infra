@@ -1,15 +1,16 @@
 name: semblo
 
-# Production compose: api + db + frontend + caddy. No MinIO — boto3 hits
-# real AWS S3 directly (SEMBLO_S3_ENDPOINT_URL is unset in /opt/semblo/.env).
+# Production compose: api + db + frontend + web + caddy. No MinIO — boto3
+# hits real AWS S3 directly (SEMBLO_S3_ENDPOINT_URL is unset in /opt/semblo/.env).
 #
 # Compose reads /opt/semblo/.env automatically for ${VAR} interpolation here
-# (e.g. POSTGRES_PASSWORD, GHCR_REPOSITORY, FRONTEND_GHCR_REPOSITORY). The
-# `api` service additionally pulls that same file into the container via
-# `env_file:` so every SEMBLO_* setting reaches uvicorn.
+# (e.g. POSTGRES_PASSWORD, GHCR_REPOSITORY, FRONTEND_GHCR_REPOSITORY,
+# WEB_GHCR_REPOSITORY). The `api` service additionally pulls that same file
+# into the container via `env_file:` so every SEMBLO_* setting reaches uvicorn.
 #
 # IMAGE_TAG          — exported by semblo-backend's deploy script. Defaults to `latest`.
 # FRONTEND_IMAGE_TAG — exported by semblo-frontend's deploy script. Defaults to `latest`.
+# WEB_IMAGE_TAG      — exported by semblo-web's deploy script. Defaults to `latest`.
 
 services:
   api:
@@ -81,11 +82,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  web:
+    # Authenticated travel-planning web app (web.semblo.app) — the browser
+    # twin of the Flutter app. Distinct from `frontend`, which is the
+    # marketing/landing site on the apex (semblo.app).
+    image: ghcr.io/${WEB_GHCR_REPOSITORY}:${WEB_IMAGE_TAG:-latest}
+    container_name: semblo-web
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   caddy:
     # No depends_on: Caddy resolves upstreams via Docker DNS on each request,
-    # so it starts cleanly even if `api` or `frontend` are missing/down. This
-    # also keeps `docker compose up -d caddy` from cascade-pulling images that
-    # might not be on GHCR yet (e.g. before the first frontend CI run).
+    # so it starts cleanly even if `api`, `frontend` or `web` are missing/down.
+    # This also keeps `docker compose up -d caddy` from cascade-pulling images
+    # that might not be on GHCR yet (e.g. before the first web/frontend CI run).
     image: caddy:2-alpine
     container_name: semblo-caddy
     ports:

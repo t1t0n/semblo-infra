@@ -33,8 +33,11 @@ locals {
     #     --type SecureString --value t1t0n/semblo-backend --overwrite
     #   aws ssm put-parameter --name /semblo/prod/FRONTEND_GHCR_REPOSITORY \
     #     --type SecureString --value t1t0n/semblo-frontend --overwrite
+    #   aws ssm put-parameter --name /semblo/prod/WEB_GHCR_REPOSITORY \
+    #     --type SecureString --value t1t0n/semblo-web --overwrite
     "GHCR_REPOSITORY",
     "FRONTEND_GHCR_REPOSITORY",
+    "WEB_GHCR_REPOSITORY",
 
     # Optional — set if non-default. Leave as "REPLACE_ME" to skip; the
     # api container will fall back to compiled-in defaults from config.py.
