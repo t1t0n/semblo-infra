@@ -78,6 +78,15 @@ locals {
     # there's an Apple Developer account — config.py defaults it to unset,
     # so /auth/apple returns 503 until then.
     "SEMBLO_SSO_GOOGLE_CLIENT_ID",
+
+    # Server-side route rendering (stage 23). Google Directions API key used
+    # by the api to compute each drive leg's polyline/distance/duration.
+    # Dedicated key restricted to the Directions API and IP-locked to the
+    # prod EIP (aws_eip.api). Unset/REPLACE_ME → routing disabled, legs carry
+    # no geometry and clients draw a straight line. Set it:
+    #   aws ssm put-parameter --name /semblo/prod/SEMBLO_MAPS_API_KEY \
+    #     --type SecureString --value "<key>" --overwrite
+    "SEMBLO_MAPS_API_KEY",
   ]
 
   # Initial values for params where the generic "REPLACE_ME" stub would be
